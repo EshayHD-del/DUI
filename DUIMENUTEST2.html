@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eshay Menu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: rgba(10, 10, 10, 0.92);
+            --primary-text: #ffffff;
+            --secondary-text: #b0b0b0;
+            --accent-color: #ffffff;
+            --highlight-bg: #000000;
+            --border-color: rgba(255, 255, 255, 0.15);
+            --font: 'Inter', sans-serif;
+            --border-radius: 8px;
+            --transition-speed: 0.1s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font);
+            background-color: transparent;
+            color: var(--primary-text);
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .hidden { display: none !important; }
+
+        .menu-container {
+            position: absolute;
+            top: 15vh;
+            left: 5vw;
+            width: 420px;
+            height: 500px;
+            background: var(--bg-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+            visibility: hidden;
+            background: linear-gradient(135deg, rgba(10, 10, 50, 0.8), rgba(50, 50, 100, 0.8));
+            animation: gradient 5s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .header-image {
+            width: 100%;
+            height: 100px;
+            background-image: url('https://cdn.discordapp.com/attachments/1415681958192746726/1419182102842179664/standard.gif?ex=68d0d3d4&is=68cf8254&hm=6dc6143c07f167bd10c0da103b9a5a445e5808beb2284d33457406d2c1e534dd&');
+            background-size: cover;
+            background-position: center;
+            border-bottom: 1px solid var(--border-color);
+            border-top-left-radius: var(--border-radius);
+            border-top-right-radius: var(--border-radius);
+        }
+
+        .tab-bar {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            left: -60px;
+            top: 120px;
+        }
+
+        .tab-item {
+            width: 100px;
+            padding: 10px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 5px;
+            transform: translateX(calc(10px * var(--tab-index)));
+        }
+
+        .tab-item.active {
+            background: var(--highlight-bg);
+            color: var(--accent-color);
+        }
+
+        .tab-item:hover {
+            background: rgba(138, 43, 226, 0.3);
+        }
+
+        .breadcrumb-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-color);
+            margin-top: 100px;
+        }
+
+        #breadcrumb { color: var(--secondary-text); text-transform: uppercase; }
+        #option-counter { color: var(--primary-text); }
+
+        .menu-items {
+            list-style: none;
+            position: relative;
+            height: 310px;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .menu-items::-webkit-scrollbar {
+            display: none;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 11px 15px;
+            font-size: 15px;
+            position: relative;
+            height: 41px;
+            transition: background-color 0.2s ease;
+        }
+
+        .menu-item:hover {
+            background: rgba(138, 43, 226, 0.3) !important;
+            cursor: pointer;
+        }
+
+        .selection-highlight {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 41px;
+            background: var(--highlight-bg);
+            z-index: 1;
+            transition: top var(--transition-speed) ease-out;
+        }
+
+        .item-content {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .item-label { flex-grow: 1; }
+        .item-value { color: var(--primary-text); font-weight: 500; }
+
+        .toggle-indicator { font-weight: 600; }
+        .toggle-indicator.on { color: #2ecc71; }
+        .toggle-indicator.off { color: #ff4757; }
+
+        .slider-bar {
+            width: 120px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .slider-fill {
+            height: 100%;
+            background: var(--primary-text);
+            border-radius: 4px;
+        }
+
+        .slider-container { display: flex; align-items: center; gap: 10px; }
+
+        .footer {
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid var(--border-color);
+            min-height: 20px;
+            font-size: 13px;
+            color: var(--secondary-text);
+            border-bottom-left-radius: var(--border-radius);
+            border-bottom-right-radius: var(---border-radius);
+        }
+
+        #notification-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .notification {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--primary-text);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            animation: slideIn 0.3s forwards, slideOut 0.3s 2.7s forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        .input-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .input-box {
+            background: var(--bg-color);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            width: 400px;
+            text-align: center;
+        }
+
+        .input-box h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .input-box input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            color: var(--primary-text);
+            border-radius: 6px;
+            font-size: 16px;
+            text-align: center;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .input-box input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(138, 43, 226, 0.2);
+        }
+
+        .input-box input:hover {
+            border-color: rgba(138, 43, 226, 0.6);
+        }
+
+        .input-box small {
+            color: var(--secondary-text);
+            margin-top: 10px;
+            display: block;
+        }
+
+        .status-panel {
+            position: absolute;
+            right: 50px;
+            top: 15vh;
+            width: 350px;
+            height: 500px;
+            background: var(--bg-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+            visibility: hidden;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .status-panel::-webkit-scrollbar {
+            display: none;
+        }
+
+        .status-header {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status-content {
+            padding: 15px;
+            position: relative;
+        }
+
+        .status-selection-highlight {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            background: var(--highlight-bg);
+            z-index: 1;
+            transition: top var(--transition-speed) ease-out;
+            opacity: 0;
+        }
+
+        .status-item-external {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+            position: relative;
+            z-index: 2;
+            transition: background-color 0.2s ease;
+        }
+
+        .status-item-external:last-child {
+            border-bottom: none;
+        }
+
+        .status-item-external.selected {
+            background: rgba(138, 43, 226, 0.3);
+            margin: 0 -15px;
+            padding: 8px 15px;
+        }
+
+        .status-item-external:hover {
+            background: rgba(138, 43, 226, 0.2) !important;
+            cursor: pointer;
+        }
+
+        .status-item-input {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 2;
+            transition: background-color 0.2s ease;
+        }
+
+        .status-item-input:hover {
+            background: rgba(138, 43, 226, 0.2) !important;
+            cursor: pointer;
+        }
+
+        .status-item-input:hover input {
+            border-color: var(--accent-color) !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            box-shadow: 0 0 0 1px rgba(138, 43, 226, 0.4) !important;
+        }
+
+        .status-item-input {
+            transition: all 0.2s ease;
+        }
+
+        .status-item-input input {
+            transition: all 0.2s ease;
+        }
+
+        .status-on { color: #2ecc71; font-weight: 600; }
+        .status-off { color: #ff4757; font-weight: 600; }
+        .status-unknown { color: #f39c12; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div id="notification-container"></div>
+    <div class="input-overlay hidden" id="input-overlay"></div>
+    <div class="menu-container" id="menu-container">
+        <div class="header-image"></div>
+        <div class="tab-bar" id="tab-bar"></div>
+        <div class="breadcrumb-bar">
+            <span id="breadcrumb"></span>
+            <span id="option-counter"></span>
+        </div>
+        <ul class="menu-items" id="menu-items">
+            <div class="selection-highlight" id="selection-highlight"></div>
+        </ul>
+        <div class="footer" id="footer"></div>
+    </div>
+    <div class="status-panel" id="status-panel">
+        <div class="status-header" id="status-header">STATUS</div>
+        <div class="status-content" id="status-content">
+            <div class="status-selection-highlight" id="status-selection-highlight"></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuItemsEl = document.getElementById('menu-items');
+            const breadcrumbEl = document.getElementById('breadcrumb');
+            const counterEl = document.getElementById('option-counter');
+            const footerEl = document.getElementById('footer');
+            let highlightEl = document.getElementById('selection-highlight');
+            const notificationContainer = document.getElementById('notification-container');
+            const inputOverlay = document.getElementById('input-overlay');
+            const menuContainer = document.getElementById('menu-container');
+            const statusPanel = document.getElementById('status-panel');
+            const statusHeader = document.getElementById('status-header');
+            const statusContent = document.getElementById('status-content');
+            const statusHighlight = document.getElementById('status-selection-highlight');
+            const tabBar = document.getElementById('tab-bar');
+            let selectedIndex = 0;
+            let statusSelectedIndex = 0;
+            let currentState = null;
+            let isContentPanelOpen = false;
+            const ITEM_HEIGHT = 41;
+
+            function safeEncode(text) {
+                if (!text || typeof text !== 'string') return '';
+                return text.replace(/&/g, '&amp;')
+                           .replace(/</g, '&lt;')
+                           .replace(/>/g, '&gt;')
+                           .replace(/"/g, '&quot;')
+                           .replace(/'/g, '&#039;');
+            }
+
+            function showNotification(message) {
+                const notificationEl = document.createElement('div');
+                notificationEl.className = 'notification';
+                notificationEl.textContent = safeEncode(message);
+                notificationContainer.appendChild(notificationEl);
+                setTimeout(() => notificationEl.remove(), 3000);
+            }
+
+            function populateStatusContent(tabData, state) {
+                statusContent.innerHTML = '<div class="status-selection-highlight" id="status-selection-highlight"></div>';
+                const statusHighlightEl = document.getElementById('status-selection-highlight');
+                if (!tabData || !tabData.items || !Array.isArray(tabData.items)) return;
+                tabData.items.forEach((item, index) => {
+                    const element = document.createElement('div');
+                    if (item.type === 'input') {
+                        element.className = 'status-item-input';
+                        element.innerHTML = `
+                            <div style="width: 100%;">
+                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--secondary-text);">${safeEncode(item.label)}</label>
+                                <input type="text" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: var(--primary-text); border-radius: 3px; transition: border-color 0.2s ease, background-color 0.2s ease;" value="${safeEncode(item.value || '')}" readonly>
+                            </div>`;
+                    } else {
+                        element.className = 'status-item-external';
+                        const statusClass = item.state ? 'toggle-indicator on' : item.state === false ? 'toggle-indicator off' : 'status-unknown';
+                        element.innerHTML = `<span>${safeEncode(item.label || 'Unknown')}</span><span class="${statusClass}">${item.state === true ? 'ON' : item.state === false ? 'OFF' : ''}</span>`;
+                    }
+                    element.addEventListener('click', () => {
+                        statusSelectedIndex = index;
+                        updateStatusSelection(tabData.items);
+                        if (window.parent) {
+                            window.parent.postMessage({ action: 'select', itemIndex: index, isContentPanel: true }, '*');
+                        }
+                    });
+                    statusContent.appendChild(element);
+                });
+                window.statusHighlight = statusHighlightEl;
+                updateStatusSelection(tabData.items);
+            }
+
+            function updateStatusSelection(items) {
+                const statusItems = statusContent.querySelectorAll('.status-item-external, .status-item-input');
+                statusItems.forEach((item, i) => item.classList.toggle('selected', i === statusSelectedIndex));
+                const itemTop = statusSelectedIndex * 41;
+                statusHighlight.style.top = `${itemTop}px`;
+            }
+
+            function updateMenuFromState(state) {
+                if (!state || !state.tabs) return;
+                currentState = state;
+                tabBar.innerHTML = '';
+                state.tabs.forEach((tabData, index) => {
+                    const tabEl = document.createElement('div');
+                    tabEl.className = 'tab-item';
+                    tabEl.textContent = tabData.title;
+                    tabEl.classList.toggle('active', index === state.activeTab);
+                    tabEl.style.setProperty('--tab-index', index); // For diagonal offset
+                    tabEl.addEventListener('click', () => {
+                        if (window.parent) {
+                            window.parent.postMessage({ action: 'switchTab', tabIndex: index }, '*');
+                        }
+                    });
+                    tabBar.appendChild(tabEl);
+                });
+                menuItemsEl.innerHTML = `<div class="selection-highlight" id="selection-highlight"></div>`;
+                highlightEl = document.getElementById('selection-highlight');
+                const activeTab = state.tabs[state.activeTab];
+                if (activeTab && activeTab.items) {
+                    activeTab.items.forEach((item, index) => {
+                        const menuItemEl = document.createElement('li');
+                        menuItemEl.className = 'menu-item';
+                        let content = `<div class="item-content">`;
+                        content += `<span class="item-label">${safeEncode(item.label)}</span>`;
+                        if (item.type === 'toggle') {
+                            const statusClass = item.state ? 'toggle-indicator on' : 'toggle-indicator off';
+                            content += `<span class="${statusClass}">${item.state ? 'ON' : 'OFF'}</span>`;
+                        } else if (item.type === 'button') {
+                            content += `<i class="chevron fa-solid fa-angle-right"></i>`;
+                        } else if (item.type === 'input') {
+                            content += `<span class="item-value">${safeEncode(item.value || item.placeholder)}</span>`;
+                        }
+                        content += `</div>`;
+                        menuItemEl.innerHTML = content;
+                        menuItemsEl.appendChild(menuItemEl);
+                        menuItemEl.addEventListener('click', () => {
+                            selectedIndex = index;
+                            updateSelection(activeTab.items);
+                            if (window.parent) {
+                                window.parent.postMessage({ action: 'selectItem', itemIndex: index }, '*');
+                            }
+                        });
+                    });
+                }
+                breadcrumbEl.textContent = activeTab ? activeTab.header : 'Eshay Menu';
+                counterEl.textContent = activeTab ? `${state.selection.index + 1} / ${activeTab.items.length}` : '0 / 0';
+                selectedIndex = state.selection.index || 0;
+                updateSelection(activeTab ? activeTab.items : []);
+                isContentPanelOpen = state.isContentPanelOpen;
+                statusPanel.style.visibility = isContentPanelOpen ? 'visible' : 'hidden';
+                if (isContentPanelOpen && activeTab) {
+                    statusHeader.textContent = activeTab.header || activeTab.title;
+                    populateStatusContent(activeTab, state);
+                }
+                footerEl.textContent = activeTab && activeTab.items[selectedIndex] ? activeTab.items[selectedIndex].description || '' : '';
+            }
+
+            function updateSelection(items) {
+                const menuItems = menuItemsEl.querySelectorAll('.menu-item');
+                menuItems.forEach((item, i) => item.classList.toggle('selected', i === selectedIndex));
+                const itemTop = selectedIndex * ITEM_HEIGHT;
+                const scrollTop = menuItemsEl.scrollTop;
+                const containerHeight = menuItemsEl.clientHeight;
+                if (itemTop < scrollTop) {
+                    menuItemsEl.scrollTop = itemTop;
+                } else if (itemTop + ITEM_HEIGHT > scrollTop + containerHeight) {
+                    menuItemsEl.scrollTop = itemTop + ITEM_HEIGHT - containerHeight;
+                }
+                highlightEl.style.top = `${itemTop - menuItemsEl.scrollTop}px`;
+                counterEl.textContent = `${selectedIndex + 1} / ${items.length}`;
+            }
+
+            window.addEventListener("message", (event) => {
+                const { action, data } = event.data;
+                if (action === "update" || action === "show") {
+                    updateMenuFromState(data);
+                    menuContainer.style.visibility = 'visible';
+                    if (action === "show") {
+                        showNotification("Eshay Menu loaded successfully");
+                    }
+                }
+                if (action === "hide") {
+                    menuContainer.style.visibility = 'hidden';
+                    statusPanel.style.visibility = 'hidden';
+                }
+                if (action === "setBounds") {
+                    menuContainer.style.width = `${data.width}px`;
+                    menuContainer.style.height = `${data.height}px`;
+                    menuContainer.style.left = `${data.x / 1920 * 100}vw`;
+                    menuContainer.style.top = `${data.y / 1080 * 100}vh`;
+                }
+                if (action === "setAccentColor") {
+                    document.documentElement.style.setProperty('--accent-color', `rgb(${data.r}, ${data.g}, ${data.b})`);
+                }
+                if (action === "switchTab") {
+                    selectedIndex = 0;
+                    updateMenuFromState({ ...currentState, activeTab: data.tabIndex, selection: { index: 0 } });
+                }
+                if (action === "selectItem") {
+                    selectedIndex = data.itemIndex;
+                    updateSelection(currentState.tabs[currentState.activeTab].items);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
