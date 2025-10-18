@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macho Menu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy-bundle.umd.min.js"></script>
+    <style>
+        .menu-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+        .menu-item {
+            padding: 8px 12px;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .submenu {
+            margin-left: 20px;
+            display: none;
+        }
+        .active {
+            background: rgba(155, 89, 182, 0.5);
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .scroll-options {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 5px;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+            z-index: 2000;
+        }
+        .notification.success {
+            background: rgba(0, 255, 0, 0.8);
+            color: #fff;
+        }
+        .notification.info {
+            background: rgba(0, 0, 255, 0.8);
+            color: #fff;
+        }
+    </style>
+</head>
+<body class="bg-transparent">
+    <div id="menu-container" class="menu-container">
+        <div id="menu-items"></div>
+    </div>
+    <div id="notification" class="notification"></div>
+
+    <script>
+        let currentMenu = [];
+        let currentIndex = 0;
+        let nestedMenus = [];
+        let isVisible = false;
+
+        function renderMenu(menu) {
+            const menuItems = document.getElementById('menu-items');
+            menuItems.innerHTML = '';
+
+            menu.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = `menu-item ${index === currentIndex ? 'active' : ''}`;
+                div.innerHTML = `<span>${item.icon ? `<i class="fas fa-${item.icon}"></i> ` : ''}${item.label}</span>`;
+                if (item.description) {
+                    tippy(div, { content: item.description, placement: 'right' });
+                }
+
+                if (item.type === 'submenu') {
+                    div.addEventListener('click', () => {
+                        nestedMenus.push({ index: currentIndex, menu: currentMenu });
+                        currentIndex = 0;
+                        currentMenu = item.submenu;
+                        renderMenu(currentMenu);
+                    });
+                } else if (item.type === 'button') {
+                    div.addEventListener('click', () => {
+                        window.MachoSendDuiMessage && MachoSendDuiMessage(JSON.stringify({
+                            action: 'notify',
+                            message: `${item.label} triggered!`,
+                            type: 'success'
+                        }));
+                    });
+                } else if (item.type === 'checkbox') {
+                    const checkboxDiv = document.createElement('div');
+                    checkboxDiv.className = 'checkbox-container';
+                    checkboxDiv.innerHTML = `
+                        <input type="checkbox" ${item.checked ? 'checked' : ''} data-index="${index}">
+                        <span>${item.label}</span>
+                    `;
+                    checkboxDiv.addEventListener('change', (e) => {
+                        const checked = e.target.checked;
+                        window.MachoSendDuiMessage && MachoSendDuiMessage(JSON.stringify({
+                            action: 'notify',
+                            message: `${item.label} ${checked ? 'enabled' : 'disabled'}`,
+                            type: 'success'
+                        }));
+                    });
+                    div.appendChild(checkboxDiv);
+                } else if (item.type === 'slider') {
+                    const sliderDiv = document.createElement('div');
+                    sliderDiv.className = 'slider-container';
+                    sliderDiv.innerHTML = `
+                        <span>${item.label}: </span>
+                        <input type="range" min="${item.min}" max="${item.max}" value="${item.value}" data-index="${index}">
+                        <span>${item.value}</span>
+                    `;
+                    sliderDiv.addEventListener('input', (e) => {
+                        const value = e.target.value;
+                        sliderDiv.querySelector('span:last-child').textContent = value;
+                        window.MachoSendDuiMessage && MachoSendDuiMessage(JSON.stringify({
+                            action: 'notify',
+                            message: `${item.label} set to: ${value}`,
+                            type: 'info'
+                        }));
+                    });
+                    div.appendChild(sliderDiv);
+                } else if (item.type === 'scroll') {
+                    div.innerHTML += `<div class="scroll-options" data-index="${index}"></div>`;
+                    const optionsDiv = div.querySelector('.scroll-options');
+                    item.options.forEach((opt, optIndex) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = `menu-item ${optIndex === item.selected ? 'active' : ''}`;
+                        optionDiv.textContent = opt.label;
+                        optionDiv.addEventListener('click', () => {
+                            window.MachoSendDuiMessage && MachoSendDuiMessage(JSON.stringify({
+                                action: 'notify',
+                                message: `Selected: ${opt.label}`,
+                                type: 'success'
+                            }));
+                        });
+                        optionsDiv.appendChild(optionDiv);
+                    });
+                }
+
+                div.addEventListener('click', () => {
+                    currentIndex = index;
+                    renderMenu(currentMenu);
+                });
+                menuItems.appendChild(div);
+            });
+        }
+
+        window.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            if (data.action === 'setVisible') {
+                isVisible = data.visible;
+                document.getElementById('menu-container').style.display = isVisible ? 'block' : 'none';
+            } else if (data.action === 'setCurrent') {
+                currentIndex = data.current + 1;
+                currentMenu = data.menu;
+                renderMenu(currentMenu);
+            } else if (data.action === 'notify') {
+                const notification = document.getElementById('notification');
+                notification.textContent = data.message;
+                notification.className = `notification ${data.type}`;
+                notification.style.display = 'block';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 3000);
+            }
+        });
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialMenu = [
+                { label: "Main", type: 'submenu', icon: 'home', description: 'Main menu options', submenu: [] },
+                { label: "Online", type: 'submenu', icon: 'users', description: 'Online player options', submenu: [] },
+                { label: "Weapon", type: 'submenu', icon: 'gun', description: 'Weapon-related options', submenu: [] },
+                { label: "Emote", type: 'submenu', icon: 'face-smile', description: 'Emote controls', submenu: [] }
+            ];
+            currentMenu = initialMenu;
+            renderMenu(currentMenu);
+        });
+    </script>
+</body>
+</html>
