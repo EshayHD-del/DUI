@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freecam</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        .freecam-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+            display: none; /* Hidden by default */
+        }
+
+        .freecam-overlay.active {
+            display: block;
+        }
+
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: #e74c3c;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+        }
+
+        .crosshair::before {
+            left: 50%;
+            top: 25%;
+            width: 2px;
+            height: 50%;
+            transform: translateX(-50%);
+        }
+
+        .crosshair::after {
+            top: 50%;
+            left: 25%;
+            height: 2px;
+            width: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Recreate the original DrawMenu style */
+        .menu-list {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .menu-item {
+            font-size: 14px;
+            font-weight: 400;
+            margin: 4px 0;
+            padding: 2px 8px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            white-space: nowrap;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.2s ease;
+        }
+
+        .menu-item.selected {
+            color: #e74c3c;
+            font-weight: bold;
+            transform: scale(1.1);
+            text-shadow: 0 0 8px rgba(231, 76, 60, 0.8);
+        }
+
+        .menu-item.adjacent {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .menu-item.hidden {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="freecam-overlay" id="freecamOverlay">
+        <div class="crosshair"></div>
+        <div class="menu-list" id="menuList">
+            <!-- Menu items will be populated here -->
+        </div>
+    </div>
+
+    <script>
+        let currentIndex = 7; // Start at index 8 like original (selectedOptionIndex = 8)
+        let weaponIndex = 0;
+        let objectIndex = 0;
+        let particleIndex = 0;
+
+        const options = [
+            {name: "Shoot Weapon", action: "weapon"},
+            {name: "Shoot Animals", action: "shoot_animals"},
+            {name: "Object Spawner", action: "object"},
+            {name: "Teleport", action: "teleport"},
+            {name: "Shoot Angry Peds", action: "angry_ped"},
+            {name: "Lunch Attack Dog", action: "attack_dog"},
+            {name: "NPC Hijack Vehicle", action: "npc_hijack_vehicle"},
+            {name: "Shoot Vehicles", action: "vehicle_spam"},
+            {name: "Glitch Player Car", action: "glitch_car"},
+            {name: "Warp Into Vehicle", action: "warp_into_vehicle"},
+            {name: "Black Hole", action: "black_hole"},
+            {name: "Control Cars/fall/Ent1ty", action: "control_cars_entity"},
+            {name: "Remote Ped", action: "remote_ped"},
+            {name: "Blade Player", action: "blaze_player"},
+            {name: "Particle Spawner", action: "particle_spawner"},
+            {name: "Spectate Player", action: "spectate"},
+            {name: "Toy Car", action: "rc_car"}
+        ];
+
+        const weapons = [
+            "RAILGUN", "ASSAULTSHOTGUN", "SMG", "FIREWORK", "MOLOTOV",
+            "APPISTOL", "STUNGUN", "ASSAULTRIFLE", "ASSAULTRIFLE_MK2",
+            "ASSAULTSMG", "AUTOSHOTGUN", "BULLPUPRIFLE", "BULLPUPRIFLE_MK2",
+            "BULLPUPSHOTGUN", "BZGAS", "CARBINERIFLE", "CARBINERIFLE_MK2",
+            "COMBATMG", "COMBATMG_MK2", "COMBATPDW", "COMBATPISTOL",
+            "COMPACTLAUNCHER", "COMPACTRIFLE", "DBSHOTGUN", "DOUBLEACTION"
+        ];
+
+        const objects = ["p_ld_stinger_s", "stt_prop_race_start_line_01b", "stt_prop_ramp_multi_loop_rb", "stt_prop_ramp_spiral_xxl"];
+        const particles = ["scr_ex1_plane_exp_sp", "scr_stunts_shotburst", "scr_trev4_747_blood_impact"];
+
+        // Fixed menu drawing with proper wrapping
+        function drawMenu() {
+            const menuList = document.getElementById('menuList');
+            menuList.innerHTML = '';
+
+            const maxVisibleOptions = 2;
+
+            // Show items around the selected one with proper wrapping
+            for (let offset = -maxVisibleOptions; offset <= maxVisibleOptions; offset++) {
+                let i = currentIndex + offset;
+                
+                // Proper wrapping like original code
+                if (i < 0) i = options.length + i;
+                if (i >= options.length) i = i - options.length;
+                
+                const option = options[i];
+                const menuItem = document.createElement('div');
+                
+                let displayText = option.name;
+                
+                // Add selection info only for selected item
+                if (offset === 0) { // This is the selected item
+                    if (option.action === "weapon") {
+                        displayText = `>> ${option.name} <<`;
+                        if (weapons[weaponIndex]) {
+                            displayText += ` (${weapons[weaponIndex]})`;
+                        }
+                    } else if (option.action === "object") {
+                        displayText = `>> ${option.name} <<`;
+                        displayText += ` (OBJ3CT ${objectIndex + 1})`;
+                    } else if (option.action === "particle_spawner") {
+                        displayText = `>> ${option.name} <<`;
+                        displayText += ` (PART1CLE ${particleIndex + 1})`;
+                    } else {
+                        displayText = `>> ${option.name} <<`;
+                    }
+                    menuItem.className = 'menu-item selected';
+                } else if (Math.abs(offset) === 1) {
+                    menuItem.className = 'menu-item adjacent';
+                } else {
+                    menuItem.className = 'menu-item';
+                }
+
+                menuItem.textContent = displayText;
+                menuList.appendChild(menuItem);
+            }
+        }
+
+        // Message handler
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            console.log('Received:', data.action);
+            
+            if (data.action === 'show') {
+                document.getElementById('freecamOverlay').classList.add('active');
+                drawMenu();
+            } else if (data.action === 'hide') {
+                document.getElementById('freecamOverlay').classList.remove('active');
+            } else if (data.action === 'update') {
+                currentIndex = (data.index - 1) || currentIndex;
+                weaponIndex = (data.weaponIndex - 1) || weaponIndex;
+                objectIndex = (data.objectIndex - 1) || objectIndex;
+                particleIndex = (data.particleIndex - 1) || particleIndex;
+                drawMenu();
+            } else if (data.action === 'updateSelection') {
+                currentIndex = (data.index - 1) || currentIndex;
+                drawMenu();
+            } else if (data.action === 'updateIndices') {
+                if (data.weaponIndex) weaponIndex = data.weaponIndex - 1;
+                if (data.objectIndex) objectIndex = data.objectIndex - 1;
+                if (data.particleIndex) particleIndex = data.particleIndex - 1;
+                drawMenu();
+            }
+        });
+    </script>
+</body>
+</html>
